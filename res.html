@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PARIMAL.EXE — PPH OS v1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Crect x='0' y='0' width='2' height='10' fill='%2300ff41'/%3E%3Crect x='2' y='2' width='2' height='2' fill='%2300ff41'/%3E%3Crect x='4' y='4' width='2' height='2' fill='%2300ff41'/%3E%3Crect x='6' y='6' width='4' height='2' fill='%2300ff41'/%3E%3C/svg%3E") 0 0,auto}
+
+:root{
+  --bg:#0a0e0a;--bg2:#0d110d;
+  --green:#00ff41;--green-d:#00b82e;--green-dd:#005a16;
+  --green-bg:rgba(0,255,65,.06);--green-b:rgba(0,255,65,.25);
+  --amber:#ffb000;--cyan:#00e5ff;--red:#ff3131;
+  --white:#e8ffe8;--gray:#4a6b4a;--gray2:#2a3d2a;
+  --f-px:'Press Start 2P',monospace;--f-vt:'VT323',monospace;
+}
+
+/* CRT */
+#crt{position:fixed;inset:0;pointer-events:none;z-index:99999}
+#crt::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.18) 2px,rgba(0,0,0,.18) 4px)}
+#crt::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.55) 100%)}
+#scan{position:fixed;inset:0;pointer-events:none;z-index:9998;background:repeating-linear-gradient(180deg,transparent 0px,transparent 1px,rgba(0,255,65,.016) 1px,rgba(0,255,65,.016) 2px)}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.97}94%{opacity:1}97%{opacity:.98}}
+#os{animation:flicker 9s infinite}
+
+/* OS */
+#os{width:100vw;height:100vh;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+
+/* MENU BAR */
+#mb{height:28px;flex-shrink:0;background:var(--green);display:flex;align-items:center;padding:0 8px;z-index:9999;gap:0;border-bottom:2px solid var(--green-d)}
+.mb-brand{font-family:var(--f-px);font-size:8px;color:#000;letter-spacing:.05em;user-select:none;white-space:nowrap}
+.mb-sep{width:2px;height:16px;background:rgba(0,0,0,.3);margin:0 8px}
+.mb-nav{display:flex;gap:0}
+.mb-nav button{font-family:var(--f-px);font-size:7px;color:#000;background:none;border:none;cursor:pointer;padding:0 8px;height:28px;letter-spacing:.03em;white-space:nowrap;transition:background .08s}
+.mb-nav button:hover{background:rgba(0,0,0,.2)}
+.mb-r{margin-left:auto}
+#clock{font-family:var(--f-px);font-size:7px;color:#000;letter-spacing:.05em}
+
+/* DESKTOP */
+#dt{flex:1;position:relative;overflow:hidden;background:var(--bg)}
+#dt::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(0,255,65,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,65,.04) 1px,transparent 1px);background-size:16px 16px}
+#dt-mark{position:absolute;bottom:68px;left:50%;transform:translateX(-50%);pointer-events:none;user-select:none;z-index:1;text-align:center}
+#dt-mark-t{font-family:var(--f-px);font-size:10px;color:rgba(0,255,65,.06);letter-spacing:.3em;white-space:nowrap}
+#dt-mark-s{font-family:var(--f-px);font-size:6px;color:rgba(0,255,65,.04);letter-spacing:.4em;margin-top:6px;white-space:nowrap}
+
+/* BLINK */
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.cur{display:inline-block;width:8px;height:12px;background:var(--green);animation:blink 1s step-end infinite;vertical-align:middle;margin-left:2px}
+.cur-sm{display:inline-block;width:6px;height:10px;background:var(--green);animation:blink 1.2s step-end infinite;vertical-align:middle;margin-left:1px}
+
+/* WINDOWS */
+.win{position:absolute;display:flex;flex-direction:column;background:var(--bg2);border:2px solid var(--green-d);box-shadow:4px 4px 0 0 #000;overflow:hidden}
+.win.focused{border-color:var(--green);box-shadow:4px 4px 0 0 var(--green-dd),6px 6px 0 0 rgba(0,255,65,.08)}
+.win.hidden{display:none!important}
+
+.win-tb{height:24px;display:flex;align-items:center;padding:0 6px;gap:6px;cursor:grab;flex-shrink:0;user-select:none;background:var(--green);border-bottom:2px solid var(--green-d)}
+.win-tb:active{cursor:grabbing}
+.tl{display:flex;gap:4px;flex-shrink:0}
+.t{width:12px;height:12px;border:2px solid rgba(0,0,0,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:6px;font-family:var(--f-px);color:rgba(0,0,0,.7);font-weight:700}
+.t:hover{filter:brightness(.75)}
+.t.r{background:#ff3131}.t.y{background:#ffb000}.t.g{background:#00cc33}
+.win-title{font-family:var(--f-px);font-size:7px;color:#000;letter-spacing:.05em;flex:1;text-align:center}
+
+.win-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px;min-height:0}
+.win-body::-webkit-scrollbar{width:8px}
+.win-body::-webkit-scrollbar-track{background:#000}
+.win-body::-webkit-scrollbar-thumb{background:var(--green-dd);border:2px solid #000}
+
+/* SHARED */
+.sec-hd{font-family:var(--f-px);font-size:7px;color:var(--green);letter-spacing:.08em;padding:4px 0;border-bottom:2px solid var(--green-dd);margin:14px 0 10px;display:flex;align-items:center;gap:6px}
+.sec-hd:first-child{margin-top:0}
+.sec-hd::before{content:'>';color:var(--amber);font-family:var(--f-px)}
+.vtxt{font-family:var(--f-vt);font-size:18px;color:var(--green);line-height:1.45;letter-spacing:.02em}
+.pxtxt{font-family:var(--f-px);font-size:7px;color:var(--green);line-height:2;letter-spacing:.03em}
+.pxtxt-sm{font-family:var(--f-px);font-size:6px;color:var(--gray);line-height:2;letter-spacing:.02em}
+.px-divider{height:2px;background:var(--green-dd);margin:12px 0}
+
+.px-tag{font-family:var(--f-px);font-size:6px;padding:3px 6px;background:#000;border:2px solid var(--green-dd);color:var(--gray);display:inline-block;letter-spacing:.03em;cursor:default;transition:border-color .08s,color .08s,background .08s}
+.px-tag:hover,.px-tag.hi{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.px-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.px-pill{font-family:var(--f-px);font-size:6px;padding:3px 8px;background:var(--green-bg);border:2px solid var(--green);color:var(--green);display:inline-block;letter-spacing:.04em}
+
+/* ABOUT */
+.av-px{width:64px;height:64px;border:2px solid var(--green);background:#000;display:flex;align-items:center;justify-content:center;font-family:var(--f-px);font-size:11px;color:var(--green);flex-shrink:0;position:relative;box-shadow:3px 3px 0 var(--green-dd)}
+.av-px::before,.av-px::after{content:'';position:absolute;width:6px;height:6px;border-top:2px solid var(--amber);border-left:2px solid var(--amber);top:-2px;left:-2px}
+.av-px::after{border-top:none;border-left:none;border-bottom:2px solid var(--amber);border-right:2px solid var(--amber);top:auto;left:auto;bottom:-2px;right:-2px}
+
+/* TIMELINE */
+.tl-e{display:flex;gap:10px;padding-bottom:16px}
+.tl-e:last-child{padding-bottom:0}
+.tl-dc{display:flex;flex-direction:column;align-items:center;flex-shrink:0;margin-top:2px}
+.tl-dot{width:10px;height:10px;background:var(--green);border:2px solid #000;outline:2px solid var(--green);flex-shrink:0;z-index:1}
+.tl-dot.dim{background:var(--green-dd);outline-color:var(--green-dd)}
+.tl-line{flex:1;width:2px;background:var(--green-dd);margin-top:2px}
+.tl-e:last-child .tl-line{display:none}
+.tl-role{font-family:var(--f-px);font-size:7px;color:var(--green);line-height:1.8;margin-bottom:2px}
+.tl-co{font-family:var(--f-vt);font-size:16px;color:var(--amber);line-height:1.2;margin-bottom:1px}
+.tl-per{font-family:var(--f-px);font-size:6px;color:var(--gray);margin-bottom:6px;letter-spacing:.03em}
+.tl-ul{list-style:none;display:flex;flex-direction:column;gap:3px}
+.tl-ul li{font-family:var(--f-vt);font-size:16px;color:var(--green);line-height:1.35;padding-left:14px;position:relative}
+.tl-ul li::before{content:'>';position:absolute;left:0;color:var(--green-d);font-family:var(--f-px);font-size:8px;top:3px}
+
+/* WORK CARDS */
+.wg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.wc{border:2px solid var(--green-dd);cursor:pointer;overflow:hidden;transition:border-color .08s;background:#000;box-shadow:2px 2px 0 #000}
+.wc:hover{border-color:var(--green);box-shadow:3px 3px 0 var(--green-dd)}
+.wt{height:48px;display:flex;align-items:center;justify-content:center;border-bottom:2px solid var(--green-dd);font-family:var(--f-px);font-size:9px;color:var(--green);letter-spacing:.05em}
+.wi{padding:7px 8px}
+.wn{font-family:var(--f-px);font-size:7px;color:var(--green);margin-bottom:3px}
+.wm{font-family:var(--f-vt);font-size:14px;color:var(--gray)}
+
+/* CONTACT */
+.ct-link{display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px solid var(--green-dd);background:#000;text-decoration:none;transition:border-color .08s,background .08s;cursor:pointer;margin-bottom:6px}
+.ct-link:hover{border-color:var(--green);background:var(--green-bg)}
+.ct-link:last-child{margin-bottom:0}
+.ct-ico{font-family:var(--f-px);font-size:9px;color:var(--green);width:20px;flex-shrink:0;text-align:center}
+.ct-lbl{font-family:var(--f-px);font-size:5px;color:var(--gray);letter-spacing:.1em;margin-bottom:2px}
+.ct-val{font-family:var(--f-vt);font-size:16px;color:var(--green)}
+
+/* SKILL BARS */
+@keyframes barPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(.65)}}
+.sk-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sk-lbl{font-family:var(--f-px);font-size:6px;color:var(--green);width:88px;flex-shrink:0;letter-spacing:.02em}
+.px-bar-wrap{height:10px;background:#000;border:2px solid var(--green-dd);overflow:hidden;flex:1}
+.px-bar{height:100%;background:var(--green);animation:barPulse 3s ease-in-out infinite}
+
+/* AI CARDS */
+.ai-card{border:2px solid var(--green-dd);padding:8px 10px;background:#000;margin-bottom:6px}
+.ai-card:hover{border-color:var(--green)}
+.ai-t{font-family:var(--f-px);font-size:6px;color:var(--amber);margin-bottom:5px;letter-spacing:.04em}
+.ai-d{font-family:var(--f-vt);font-size:15px;color:var(--green);line-height:1.4}
+
+/* DOCK */
+#dock-wrap{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:9999}
+#dock{display:flex;align-items:flex-end;gap:4px;padding:6px 10px;background:#000;border:2px solid var(--green);box-shadow:3px 3px 0 var(--green-dd),5px 5px 0 #000}
+.dk{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;position:relative;padding:2px}
+.dk-ico{width:40px;height:40px;border:2px solid var(--green-dd);background:#000;display:flex;align-items:center;justify-content:center;font-family:var(--f-px);font-size:7px;color:var(--green);text-align:center;transition:transform .1s steps(3),border-color .08s;line-height:1.5}
+.dk:hover .dk-ico{transform:translateY(-8px);border-color:var(--green)}
+.dk-lbl{font-family:var(--f-px);font-size:5px;color:var(--gray);white-space:nowrap;letter-spacing:.04em}
+.dk-dot{width:4px;height:4px;background:var(--green);opacity:0;margin-top:1px}
+.dk-dot.on{opacity:1;animation:blink 2s step-end infinite}
+.dk-sep{width:2px;height:28px;background:var(--green-dd);margin:0 2px;align-self:center}
+
+/* BOOT */
+#boot{position:fixed;inset:0;background:#000;z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.boot-logo{font-family:var(--f-px);font-size:20px;color:var(--green);letter-spacing:.1em;animation:blink 1s step-end infinite}
+.boot-sub{font-family:var(--f-px);font-size:7px;color:var(--green-d);letter-spacing:.15em;margin-top:4px}
+.boot-bar-wrap{width:280px;height:12px;background:#000;border:2px solid var(--green-dd);margin-top:22px;overflow:hidden}
+.boot-bar{height:100%;width:0;background:var(--green);transition:width .08s steps(1)}
+.boot-msg{font-family:var(--f-px);font-size:6px;color:var(--green-d);letter-spacing:.06em;height:14px;text-align:center;min-width:280px;margin-top:4px}
+.boot-cursor{font-family:var(--f-px);font-size:7px;color:var(--green);letter-spacing:.06em;margin-top:10px;min-height:16px;text-align:center;min-width:280px}
+
+/* ANIMATIONS */
+@keyframes pxOpen{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+@keyframes pxClose{from{opacity:1}to{opacity:0}}
+.w-open{animation:pxOpen .14s steps(4) forwards}
+.w-close{animation:pxClose .1s steps(3) forwards}
+
+/* MOBILE */
+#mob{display:none;position:fixed;inset:0;background:#000;z-index:999999;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:24px;text-align:center}
+.mob-t{font-family:var(--f-px);font-size:10px;color:var(--green);letter-spacing:.1em;line-height:2}
+.mob-s{font-family:var(--f-vt);font-size:18px;color:var(--green-d);margin-top:4px}
+.mob-l{display:flex;flex-direction:column;gap:6px;width:100%;max-width:280px;margin-top:12px}
+.mob-link{font-family:var(--f-px);font-size:6px;padding:10px;text-align:left;border:2px solid var(--green-dd);background:#000;color:var(--green);text-decoration:none;letter-spacing:.05em}
+@media(max-width:900px){#mob{display:flex}#boot,#os,#crt,#scan{display:none}}
+</style>
+</head>
+<body>
+<div id="crt"></div>
+<div id="scan"></div>
+
+<div id="mob">
+  <div class="mob-t">PARIMAL.EXE<span class="cur"></span></div>
+  <div class="mob-s">Desktop required to run this OS</div>
+  <div class="mob-l">
+    <a class="mob-link" href="https://pphstudio.framer.website" target="_blank">&gt; PORTFOLIO ↗</a>
+    <a class="mob-link" href="mailto:work.hedaooparimal@gmail.com">&gt; EMAIL ↗</a>
+    <a class="mob-link" href="https://www.linkedin.com/in/parimalhedaoo" target="_blank">&gt; LINKEDIN ↗</a>
+  </div>
+</div>
+
+<!-- BOOT -->
+<div id="boot">
+  <div class="boot-logo">PPH.OS</div>
+  <div class="boot-sub">VERSION 1.0 &nbsp;·&nbsp; MUMBAI EDITION</div>
+  <div class="boot-bar-wrap"><div class="boot-bar" id="bbar"></div></div>
+  <div class="boot-msg" id="bmsg">&nbsp;</div>
+  <div class="boot-cursor" id="bcur">&nbsp;</div>
+</div>
+
+<!-- OS -->
+<div id="os" style="display:none">
+  <div id="mb">
+    <div class="mb-brand">&#9733; PPH.OS &nbsp;</div>
+    <div class="mb-sep"></div>
+    <nav class="mb-nav">
+      <button onclick="openWin('about')">ABOUT</button>
+      <button onclick="openWin('exp')">EXP</button>
+      <button onclick="openWin('work')">WORK</button>
+      <button onclick="openWin('ai')">AI</button>
+      <button onclick="openWin('skills')">SKILLS</button>
+      <button onclick="openWin('contact')">CONTACT</button>
+    </nav>
+    <div class="mb-r"><div id="clock"></div></div>
+  </div>
+
+  <div id="dt">
+    <div id="dt-mark">
+      <div id="dt-mark-t">PPH STUDIO</div>
+      <div id="dt-mark-s">FILMMAKER &nbsp;·&nbsp; CINEMATOGRAPHER &nbsp;·&nbsp; AI ENGINEER</div>
+    </div>
+
+    <!-- ABOUT -->
+    <div class="win w-open focused" id="win-about" style="left:28px;top:40px;width:278px">
+      <div class="win-tb">
+        <div class="tl"><div class="t r" onclick="closeWin('about')">X</div><div class="t y" onclick="minWin('about')">-</div><div class="t g" onclick="bringFront('about')">+</div></div>
+        <span class="win-title">&#9733; ABOUT.EXE</span>
+      </div>
+      <div class="win-body">
+        <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px">
+          <div class="av-px">PH</div>
+          <div>
+            <div class="pxtxt">PARIMAL<br>HEDAOO</div>
+            <div style="font-family:var(--f-vt);font-size:16px;color:var(--amber);margin-top:2px">FOUNDER &amp; CD</div>
+            <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
+              <div class="px-pill">5+ YRS</div><div class="px-pill">MUMBAI</div>
+            </div>
+          </div>
+        </div>
+        <div class="px-divider"></div>
+        <div class="vtxt" style="margin:10px 0">Filmmaker, agency founder &amp; AI production engineer. First in India building production-grade AI video workflows on Seedance 2.0, Kling 2.1 &amp; Higgsfield.<span class="cur-sm"></span></div>
+        <div class="px-divider"></div>
+        <div class="sec-hd">STATUS</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="width:8px;height:8px;background:var(--green);animation:blink 1.5s step-end infinite;flex-shrink:0"></div>
+          <div class="pxtxt-sm" style="color:var(--green)">OPEN TO COLLABS</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:8px;height:8px;background:var(--amber);flex-shrink:0"></div>
+          <div class="pxtxt-sm" style="color:var(--amber)">PGP BHARAT @ MASTERS' UNION</div>
+        </div>
+        <div class="px-divider"></div>
+        <div class="sec-hd">LINKS</div>
+        <a href="https://pphstudio.framer.website" target="_blank" class="ct-link" style="margin-bottom:4px"><div class="ct-ico">&#9733;</div><div><div class="ct-lbl">PORTFOLIO</div><div class="ct-val">pphstudio.framer.website</div></div></a>
+        <a href="mailto:work.hedaooparimal@gmail.com" class="ct-link" style="margin-bottom:4px"><div class="ct-ico">@</div><div><div class="ct-lbl">EMAIL</div><div class="ct-val">work.hedaooparimal@gmail.com</div></div></a>
+        <a href="https://www.linkedin.com/in/parimalhedaoo" target="_blank" class="ct-link"><div class="ct-ico">in</div><div><div class="ct-lbl">LINKEDIN</div><div class="ct-val">/in/parimalhedaoo</div></div></a>
+      </div>
+    </div>
+
+    <!-- EXPERIENCE -->
+    <div class="win w-open" id="win-exp" style="left:346px;top:40px;width:456px;max-height:618px">
+      <div class="win-tb">
+        <div class="tl"><div class="t r" onclick="closeWin('exp')">X</div><div class="t y" onclick="minWin('exp')">-</div><div class="t g" onclick="bringFront('exp')">+</div></div>
+        <span class="win-title">&#9733; EXPERIENCE.EXE</span>
+      </div>
+      <div class="win-body">
+        <div class="sec-hd" style="margin-top:0">WORK HISTORY</div>
+        <div class="tl-e">
+          <div class="tl-dc"><div class="tl-dot"></div><div class="tl-line"></div></div>
+          <div><div class="tl-role">FOUNDER &amp; CREATIVE DIR.</div><div class="tl-co">PPH Studio</div><div class="tl-per">JUN 2023 – PRESENT &nbsp;·&nbsp; MUMBAI</div>
+          <ul class="tl-ul"><li>End-to-end campaigns for 5+ national brands — Haldiram's, Pattri, Reliance</li><li>AI-integrated pipelines: Seedance 2.0, Kling 2.1, Higgsfield — 30–40% faster turnaround</li><li>Built SKILL.md prompt arch: Visual Style Transfer, Kling Transition, Seedance Director</li><li>Launched Framer portfolio + Apify MCP competitor intelligence pipeline</li></ul></div>
+        </div>
+        <div class="tl-e">
+          <div class="tl-dc"><div class="tl-dot"></div><div class="tl-line"></div></div>
+          <div><div class="tl-role">DOP &amp; VIDEO PRODUCER</div><div class="tl-co">100x Engineers</div><div class="tl-per">2025 &nbsp;·&nbsp; BANGALORE</div>
+          <ul class="tl-ul"><li>DOP, Editor &amp; Producer for 212K-sub tech YouTube channel — full pipeline</li><li>Supported Avey TV productions concurrently</li></ul></div>
+        </div>
+        <div class="tl-e">
+          <div class="tl-dc"><div class="tl-dot"></div><div class="tl-line"></div></div>
+          <div><div class="tl-role">BUSINESS STUDENT</div><div class="tl-co">Masters' Union — PGP Bharat</div><div class="tl-per">JAN 2026 – PRESENT</div>
+          <ul class="tl-ul"><li>Travel-led programme on India's real economy across sectors &amp; geographies</li><li>Applied Bloomberg Terminal for market research &amp; competitive intelligence</li></ul></div>
+        </div>
+        <div class="tl-e">
+          <div class="tl-dc"><div class="tl-dot dim"></div><div class="tl-line"></div></div>
+          <div><div class="tl-role">CREATIVE STRATEGIST</div><div class="tl-co">Stitched Network</div><div class="tl-per">JAN 2022 – NOV 2025 &nbsp;·&nbsp; MUMBAI</div>
+          <ul class="tl-ul"><li>Led video strategy, creative briefs, shoots &amp; full production coordination</li></ul></div>
+        </div>
+        <div class="tl-e">
+          <div class="tl-dc"><div class="tl-dot dim"></div><div class="tl-line"></div></div>
+          <div><div class="tl-role">FREELANCE FILMMAKER</div><div class="tl-co">Independent</div><div class="tl-per">JUL 2021 – NOV 2025 &nbsp;·&nbsp; MUMBAI</div>
+          <ul class="tl-ul"><li>Ad campaigns for Haldiram's &amp; Pattri; DOP for culinary YouTube channel</li><li>3+ concurrent projects — 100% on-time delivery</li></ul></div>
+        </div>
+        <div class="tl-e">
+          <div class="tl-dc"><div class="tl-dot dim"></div><div class="tl-line"></div></div>
+          <div><div class="tl-role">VIDEO EDITOR INTERN</div><div class="tl-co">Reliance Jio Creative Labs</div><div class="tl-per">MAR – JUN 2021 &nbsp;·&nbsp; MUMBAI</div>
+          <ul class="tl-ul"><li>Edited content for Pritam, Shivoham &amp; Reliance Hospitals</li></ul></div>
+        </div>
+        <div class="tl-e">
+          <div class="tl-dc"><div class="tl-dot dim"></div></div>
+          <div><div class="tl-role">B.A. MULTIMEDIA &amp; MASS COMM.</div><div class="tl-co">SIES College, Mumbai</div><div class="tl-per">2019–2022 &nbsp;·&nbsp; CGPA 9.03/10 &nbsp;·&nbsp; A+ &nbsp;·&nbsp; TOP PERCENTILE</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORK -->
+    <div class="win hidden" id="win-work" style="left:100px;top:80px;width:472px;max-height:530px">
+      <div class="win-tb">
+        <div class="tl"><div class="t r" onclick="closeWin('work')">X</div><div class="t y" onclick="minWin('work')">-</div><div class="t g" onclick="bringFront('work')">+</div></div>
+        <span class="win-title">&#9733; WORK.EXE</span>
+      </div>
+      <div class="win-body">
+        <div class="sec-hd" style="margin-top:0">FEATURED CAMPAIGNS</div>
+        <div class="wg">
+          <div class="wc" onclick="window.open('https://pphstudio.framer.website','_blank')"><div class="wt" style="background:#0d0800">[ HAL ]</div><div class="wi"><div class="wn">HALDIRAM'S</div><div class="wm">Digital Ads · 2024 · FMCG</div></div></div>
+          <div class="wc" onclick="window.open('https://pphstudio.framer.website','_blank')"><div class="wt" style="background:#000d04">[STWS]</div><div class="wi"><div class="wn">STWS PODCAST</div><div class="wm">Series · 2025 · Sustainability</div></div></div>
+          <div class="wc" onclick="window.open('https://pphstudio.framer.website','_blank')"><div class="wt" style="background:#08000d">[PTR]</div><div class="wi"><div class="wn">PATTRI</div><div class="wm">E-commerce Ads · 2024</div></div></div>
+          <div class="wc" onclick="window.open('https://pphstudio.framer.website','_blank')"><div class="wt" style="background:#00080d">[MVM]</div><div class="wi"><div class="wn">MVM TEASERS</div><div class="wm">Teaser Series · 2023</div></div></div>
+          <div class="wc" onclick="window.open('https://pphstudio.framer.website','_blank')"><div class="wt" style="background:#080a00">[SLR]</div><div class="wi"><div class="wn">SOLARSQUARE</div><div class="wm">Brand Exp · 2025 · Pune</div></div></div>
+          <div class="wc" onclick="window.open('https://pphstudio.framer.website','_blank')"><div class="wt" style="background:#000a0d">[100X]</div><div class="wi"><div class="wn">100X ENGINEERS</div><div class="wm">YouTube · 212K subs · 2025</div></div></div>
+        </div>
+        <div class="sec-hd">LIVE VENTURES</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div class="ai-card"><div class="ai-t">COWORKING SPACE</div><div class="ai-d">Nagpur · 2025 – Ongoing. End-to-end construction + bottom-up unit economics model</div></div>
+          <div class="ai-card"><div class="ai-t">AI INFLUENCER STUDIO</div><div class="ai-d">AI-generated brand personas for FMCG &amp; D2C built on PPH infrastructure</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI -->
+    <div class="win hidden" id="win-ai" style="left:250px;top:100px;width:415px;max-height:570px">
+      <div class="win-tb">
+        <div class="tl"><div class="t r" onclick="closeWin('ai')">X</div><div class="t y" onclick="minWin('ai')">-</div><div class="t g" onclick="bringFront('ai')">+</div></div>
+        <span class="win-title">&#9733; AI-EXPERTISE.EXE</span>
+      </div>
+      <div class="win-body">
+        <div class="vtxt" style="margin-bottom:12px">Among the first in India building production-grade AI video workflows — architecting repeatable prompt infrastructure at scale.<span class="cur-sm"></span></div>
+        <div class="sec-hd">AI VIDEO PRODUCTION</div>
+        <div class="ai-card"><div class="ai-t">MODELS</div><div class="px-tags"><span class="px-tag hi">SEEDANCE 2.0</span><span class="px-tag hi">KLING 2.1</span><span class="px-tag hi">HIGGSFIELD AI</span><span class="px-tag">RUNWAY ML</span><span class="px-tag">SORA</span></div></div>
+        <div class="ai-card"><div class="ai-t">CUSTOM PROMPT ARCH (SKILL.MD)</div><div class="px-tags"><span class="px-tag hi">SEEDANCE DIRECTOR</span><span class="px-tag hi">VISUAL STYLE TRANSFER</span><span class="px-tag hi">KLING TRANSITION ARCHITECT</span></div></div>
+        <div class="ai-card"><div class="ai-t">TECHNIQUES</div><div class="px-tags"><span class="px-tag">5-PILLAR CINEMATIC DNA</span><span class="px-tag">BILINGUAL EN+ZH PROMPTS</span><span class="px-tag">PHYSICS-BASED TRANSITIONS</span><span class="px-tag">ANTI-SLOP ENGINEERING</span></div></div>
+        <div class="sec-hd">AI AUTOMATION &amp; TOOLING</div>
+        <div class="ai-card"><div class="ai-t">TOOLS</div><div class="px-tags"><span class="px-tag hi">CLAUDE AGENTIC</span><span class="px-tag hi">CLAUDE CODE</span><span class="px-tag hi">APIFY MCP</span><span class="px-tag">PREMIERE AI</span></div></div>
+        <div class="ai-card"><div class="ai-t">APPLICATIONS</div><div class="px-tags"><span class="px-tag">SOCIAL SCRAPING</span><span class="px-tag">COMPETITOR INTEL</span><span class="px-tag">MCP INTEGRATION</span><span class="px-tag">AUTO EDIT PIPELINES</span></div></div>
+        <div class="sec-hd">AI FOR BUSINESS</div>
+        <div class="px-tags"><span class="px-tag">D2C BRAND STRATEGY</span><span class="px-tag">BLOOMBERG TERMINAL</span><span class="px-tag">UNIT ECONOMICS</span><span class="px-tag">MARKET FEASIBILITY</span><span class="px-tag">PITCH DECK GEN</span></div>
+      </div>
+    </div>
+
+    <!-- SKILLS -->
+    <div class="win hidden" id="win-skills" style="left:510px;top:116px;width:355px">
+      <div class="win-tb">
+        <div class="tl"><div class="t r" onclick="closeWin('skills')">X</div><div class="t y" onclick="minWin('skills')">-</div><div class="t g" onclick="bringFront('skills')">+</div></div>
+        <span class="win-title">&#9733; SKILLS.EXE</span>
+      </div>
+      <div class="win-body">
+        <div class="sec-hd" style="margin-top:0">SKILL LEVELS</div>
+        <div class="pxtxt-sm" style="margin-bottom:8px">VIDEO PRODUCTION</div>
+        <div class="sk-row"><div class="sk-lbl">CINEMATOGRAPHY</div><div class="px-bar-wrap"><div class="px-bar" style="width:95%"></div></div></div>
+        <div class="sk-row"><div class="sk-lbl">COLOUR GRADING</div><div class="px-bar-wrap"><div class="px-bar" style="width:90%;animation-delay:.3s"></div></div></div>
+        <div class="sk-row"><div class="sk-lbl">DRONE / AERIAL</div><div class="px-bar-wrap"><div class="px-bar" style="width:85%;animation-delay:.6s"></div></div></div>
+        <div class="sk-row"><div class="sk-lbl">DOCUMENTARY</div><div class="px-bar-wrap"><div class="px-bar" style="width:88%;animation-delay:.2s"></div></div></div>
+        <div class="px-divider"></div>
+        <div class="pxtxt-sm" style="margin-bottom:8px">POST-PRODUCTION</div>
+        <div class="sk-row"><div class="sk-lbl">PREMIERE PRO</div><div class="px-bar-wrap"><div class="px-bar" style="width:98%;animation-delay:.1s"></div></div></div>
+        <div class="sk-row"><div class="sk-lbl">AFTER EFFECTS</div><div class="px-bar-wrap"><div class="px-bar" style="width:82%;animation-delay:.4s"></div></div></div>
+        <div class="sk-row"><div class="sk-lbl">PHOTOSHOP</div><div class="px-bar-wrap"><div class="px-bar" style="width:80%;animation-delay:.5s"></div></div></div>
+        <div class="px-divider"></div>
+        <div class="pxtxt-sm" style="margin-bottom:8px">AI &amp; TECH</div>
+        <div class="sk-row"><div class="sk-lbl">CLAUDE / LLM</div><div class="px-bar-wrap"><div class="px-bar" style="width:92%;animation-delay:.2s"></div></div></div>
+        <div class="sk-row"><div class="sk-lbl">AI VIDEO MODELS</div><div class="px-bar-wrap"><div class="px-bar" style="width:90%;animation-delay:.3s"></div></div></div>
+        <div class="sk-row"><div class="sk-lbl">FRAMER</div><div class="px-bar-wrap"><div class="px-bar" style="width:80%;animation-delay:.1s"></div></div></div>
+        <div class="px-divider"></div>
+        <div class="pxtxt-sm" style="margin-bottom:6px">STACK &amp; TOOLS</div>
+        <div class="px-tags"><span class="px-tag hi">FRAMER</span><span class="px-tag hi">CLAUDE CODE</span><span class="px-tag">NEXT.JS</span><span class="px-tag">SUPABASE</span><span class="px-tag">BLOOMBERG</span><span class="px-tag">APIFY</span></div>
+        <div class="px-divider"></div>
+        <div class="pxtxt-sm" style="margin-bottom:6px">LANGUAGES</div>
+        <div class="px-tags"><span class="px-tag hi">ENGLISH</span><span class="px-tag hi">HINDI</span><span class="px-tag hi">MARATHI</span></div>
+      </div>
+    </div>
+
+    <!-- CONTACT -->
+    <div class="win hidden" id="win-contact" style="left:836px;top:100px;width:268px">
+      <div class="win-tb">
+        <div class="tl"><div class="t r" onclick="closeWin('contact')">X</div><div class="t y" onclick="minWin('contact')">-</div><div class="t g" onclick="bringFront('contact')">+</div></div>
+        <span class="win-title">&#9733; CONTACT.EXE</span>
+      </div>
+      <div class="win-body">
+        <div class="sec-hd" style="margin-top:0">SEND MESSAGE</div>
+        <a class="ct-link" href="mailto:work.hedaooparimal@gmail.com"><div class="ct-ico">@</div><div><div class="ct-lbl">EMAIL</div><div class="ct-val">work.hedaooparimal@gmail.com</div></div></a>
+        <a class="ct-link" href="https://pphstudio.framer.website" target="_blank"><div class="ct-ico">&#9733;</div><div><div class="ct-lbl">PORTFOLIO</div><div class="ct-val">pphstudio.framer.website</div></div></a>
+        <a class="ct-link" href="https://www.linkedin.com/in/parimalhedaoo" target="_blank"><div class="ct-ico">in</div><div><div class="ct-lbl">LINKEDIN</div><div class="ct-val">/in/parimalhedaoo</div></div></a>
+        <a class="ct-link" href="tel:+918390100207"><div class="ct-ico">#</div><div><div class="ct-lbl">PHONE</div><div class="ct-val">+91 83901 00207</div></div></a>
+        <div class="px-divider"></div>
+        <div style="text-align:center;padding:6px 0">
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:5px"><div style="width:8px;height:8px;background:var(--green);animation:blink 1.5s step-end infinite"></div><div class="pxtxt-sm" style="color:var(--green)">OPEN TO COLLABS</div></div>
+          <div class="pxtxt-sm">MUMBAI &nbsp;·&nbsp; OPEN TO TRAVEL</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DOCK -->
+  <div id="dock-wrap">
+    <div id="dock">
+      <div class="dk" onclick="toggleWin('about')"><div class="dk-ico">AB<br>OUT</div><div class="dk-dot on" id="dot-about"></div><div class="dk-lbl">ABOUT</div></div>
+      <div class="dk" onclick="toggleWin('exp')"><div class="dk-ico">EX<br>P.</div><div class="dk-dot on" id="dot-exp"></div><div class="dk-lbl">EXP</div></div>
+      <div class="dk" onclick="toggleWin('work')"><div class="dk-ico">WO<br>RK</div><div class="dk-dot" id="dot-work"></div><div class="dk-lbl">WORK</div></div>
+      <div class="dk" onclick="toggleWin('ai')"><div class="dk-ico">A.I<br>.</div><div class="dk-dot" id="dot-ai"></div><div class="dk-lbl">AI</div></div>
+      <div class="dk-sep"></div>
+      <div class="dk" onclick="toggleWin('skills')"><div class="dk-ico">SK<br>ILL</div><div class="dk-dot" id="dot-skills"></div><div class="dk-lbl">SKILLS</div></div>
+      <div class="dk" onclick="toggleWin('contact')"><div class="dk-ico">CT<br>CT</div><div class="dk-dot" id="dot-contact"></div><div class="dk-lbl">CNTCT</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// BOOT
+const msgs=['INITIALIZING PPH.OS...','LOADING PRODUCTION MODULES...','MOUNTING AI PIPELINES...','CALIBRATING SEEDANCE 2.0...','CONNECTING KLING 2.1 ENGINE...','LOADING BLOOMBERG TERMINAL...','IMPORTING HALDIRAMS.DLL...','BOOTING FRAMER RUNTIME...','PPH.OS READY.'];
+let bi=0;
+const bbar=document.getElementById('bbar'),bmsg=document.getElementById('bmsg'),bcur=document.getElementById('bcur');
+function bootStep(){
+  if(bi>=msgs.length){bcur.textContent='[ PRESS ANY KEY OR CLICK TO CONTINUE ]';document.addEventListener('keydown',startOS,{once:true});document.addEventListener('click',startOS,{once:true});return;}
+  bmsg.textContent=msgs[bi];bbar.style.width=Math.round((bi+1)/msgs.length*100)+'%';bi++;
+  setTimeout(bootStep,bi===msgs.length?700:260+Math.random()*200);
+}
+setTimeout(bootStep,500);
+function startOS(){document.getElementById('boot').style.display='none';document.getElementById('os').style.display='flex';setTimeout(()=>{bringFront('about');bringFront('exp');},50);}
+
+// CLOCK
+const DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'],MOS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+function tick(){const n=new Date(),h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0'),s=String(n.getSeconds()).padStart(2,'0');document.getElementById('clock').textContent=`${DAYS[n.getDay()]} ${n.getDate()} ${MOS[n.getMonth()]}  ${h}:${m}:${s}`;}
+tick();setInterval(tick,1000);
+
+// WINDOW MANAGER
+let zTop=100;
+const states={about:'open',exp:'open',work:'closed',ai:'closed',skills:'closed',contact:'closed'};
+const el=id=>document.getElementById('win-'+id),dot=id=>document.getElementById('dot-'+id);
+function bringFront(id){zTop++;el(id).style.zIndex=zTop;document.querySelectorAll('.win').forEach(w=>w.classList.remove('focused'));el(id).classList.add('focused');}
+function openWin(id){const w=el(id);if(!w)return;w.classList.remove('hidden','w-close');void w.offsetWidth;w.classList.add('w-open');states[id]='open';if(dot(id))dot(id).classList.add('on');bringFront(id);setTimeout(()=>w.classList.remove('w-open'),200);}
+function closeWin(id){const w=el(id);if(!w)return;w.classList.add('w-close');states[id]='closed';if(dot(id))dot(id).classList.remove('on');setTimeout(()=>{w.classList.add('hidden');w.classList.remove('w-close')},120);}
+function minWin(id){const w=el(id);if(!w)return;w.classList.add('w-close');states[id]='minimized';setTimeout(()=>{w.classList.add('hidden');w.classList.remove('w-close')},120);}
+function toggleWin(id){if(states[id]==='open'){const w=el(id);if(w&&w.classList.contains('focused'))minWin(id);else bringFront(id);}else openWin(id);}
+document.querySelectorAll('.win').forEach(w=>{w.addEventListener('mousedown',()=>{const id=w.id.replace('win-','');if(states[id]==='open')bringFront(id);});});
+
+// DRAG
+let drag=null,ox=0,oy=0;
+document.addEventListener('mousedown',e=>{
+  if(e.target.classList.contains('t'))return;
+  const tb=e.target.closest('.win-tb');if(!tb)return;
+  drag=tb.closest('.win');if(!drag)return;
+  const r=drag.getBoundingClientRect();ox=e.clientX-r.left;oy=e.clientY-r.top;
+  document.body.style.userSelect='none';e.preventDefault();
+});
+document.addEventListener('mousemove',e=>{if(!drag)return;drag.style.left=Math.max(0,Math.min(e.clientX-ox,window.innerWidth-drag.offsetWidth))+'px';drag.style.top=Math.max(28,Math.min(e.clientY-oy,window.innerHeight-60))+'px';});
+document.addEventListener('mouseup',()=>{drag=null;document.body.style.userSelect='';});
+</script>
+</body>
+</html>
